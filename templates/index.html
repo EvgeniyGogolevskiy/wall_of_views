@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+<div>
+    <h1>{{title}}</h1>
+    <div id="root">
+        <div class="form">
+            <input id="message_text" class="form__input" type="text"
+                   placeholder="Введите свой отзыв..."/>
+            <div class="form__button" onclick="sendMessage()">Отправить</div>
+        </div>
+        <div id="messages">
+
+        </div>
+    </div>
+</div>
+</body>
+
+<script type="application/javascript">
+    const root = document.getElementById("messages");
+    const messageTextInput = document.getElementById("message_text");
+
+    let can_send_message = true;
+
+    let messages = [];
+    const renderMessage = ({text, created}) => {
+        let message = document.createElement("div");
+        message.innerHTML = `
+        <div class="message__created">${created}</div>
+            <div class="message__text">${text}</div>
+`
+        message.classList.add("message")
+        root.appendChild(message);
+    }
+
+    const renderMessages = () => {
+        root.innerHTML = "";
+        messages.forEach(message => renderMessage(message));
+    }
+
+    const listMessages = () => {
+        fetch("/api/messages.list")
+            .then(res => (res.json()))
+            .then(res => {
+                messages = res.messages;
+                renderMessages();
+            })
+    }
+
+    listMessages();
+    setInterval(listMessages, 3000);
+
+    const sendMessage = () => {
+        if (!can_send_message) return;
+        let text = messageTextInput.value;
+        can_send_message = false;
+        fetch("/api/messages.create", {
+            "method": "POST",
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            "body": JSON.stringify({
+                "text": text,
+            })
+        })
+            .then(res => (res.json()))
+            .then(res => {
+                return res;
+            })
+            .then(data => {
+                messages.unshift(data.message);
+                renderMessages();
+                can_send_message = true;
+            })
+        messageTextInput.value = "";
+    }
+</script>
+</html>
